@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+
+# Claude
+.claude/
+
+# OS
+.DS_Store
+
+# Logs
+*.log

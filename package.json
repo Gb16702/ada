@@ -1,0 +1,15 @@
+{
+  "name": "create-ada",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Professional frontend boilerplate with CLI generator",
+  "workspaces": [
+    "cli"
+  ],
+  "scripts": {
+    "dev": "bun run --cwd cli dev",
+    "build": "bun run --cwd cli build",
+    "test": "bun run --cwd cli dev test-app --preset standard --yes && cd cli/test-app && bun install && bun typecheck && cd .. && rm -rf test-app",
+    "create": "bun run --cwd cli dev"
+  }
+}

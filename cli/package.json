@@ -1,0 +1,26 @@
+{
+  "name": "create-ada",
+  "version": "0.1.0",
+  "description": "Create professional frontend projects with React, TanStack Start, and modern tooling",
+  "type": "module",
+  "bin": {
+    "create-ada": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target node",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.8.2",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.2"
+  }
+}
