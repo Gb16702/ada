@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 const envSchema = z.object({
   VITE_API_URL: z.string().url().optional(),
@@ -9,7 +9,7 @@ const parsed = envSchema.safeParse(import.meta.env);
 
 if (!parsed.success) {
   throw new Error(
-    `Invalid environment variables: ${JSON.stringify(parsed.error.format())}`
+    `Invalid environment variables: ${JSON.stringify(z.treeifyError(parsed.error))}`,
   );
 }
 
