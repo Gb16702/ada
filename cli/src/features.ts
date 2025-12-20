@@ -18,7 +18,6 @@ export const featureDefinitions: Record<string, FeatureDefinition> = {
     templatePath: 'features/tanstack-form',
     dependencies: {
       '@tanstack/react-form': '^1.27.1',
-      zod: '^4.1.13',
     },
     files: [
       'forms/index.ts',
@@ -37,7 +36,6 @@ export const featureDefinitions: Record<string, FeatureDefinition> = {
     dependencies: {
       'react-hook-form': '^7.54.2',
       '@hookform/resolvers': '^3.9.1',
-      zod: '^4.1.13',
     },
     files: [
       'forms/index.ts',
@@ -61,9 +59,7 @@ export const featureDefinitions: Record<string, FeatureDefinition> = {
     name: 'Environment Validation',
     description: 'Zod-based env validation',
     templatePath: 'features/env-validation',
-    dependencies: {
-      zod: '^4.1.13',
-    },
+    dependencies: {},
     files: ['lib/env.ts'],
   },
   'tests-unit': {
@@ -95,9 +91,7 @@ export const featureDefinitions: Record<string, FeatureDefinition> = {
     name: 'Auth Skeleton',
     description: 'Authentication skeleton for Better Auth',
     templatePath: 'features/auth',
-    dependencies: {
-      zod: '^4.1.13',
-    },
+    dependencies: {},
     files: [
       'auth/index.ts',
       'auth/types.ts',
