@@ -30,7 +30,6 @@ export interface FeatureSet {
   tanstackQuery: boolean;
   forms: FormLibrary;
   apiClient: boolean;
-  envValidation: boolean;
   testing: TestingOption;
   auth: boolean;
   state: StateOption;

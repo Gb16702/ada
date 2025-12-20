@@ -54,14 +54,6 @@ export const featureDefinitions: Record<string, FeatureDefinition> = {
     dependencies: {},
     files: ['lib/api/client.ts', 'lib/api/types.ts'],
   },
-  'env-validation': {
-    id: 'env-validation',
-    name: 'Environment Validation',
-    description: 'Zod-based env validation',
-    templatePath: 'features/env-validation',
-    dependencies: {},
-    files: ['lib/env.ts'],
-  },
   'tests-unit': {
     id: 'tests-unit',
     name: 'Unit Tests',
@@ -192,10 +184,6 @@ export function getRequiredFeatures(featureSet: FeatureSet): string[] {
 
   if (featureSet.apiClient) {
     features.push('api-client');
-  }
-
-  if (featureSet.envValidation) {
-    features.push('env-validation');
   }
 
   if (featureSet.testing === 'unit' || featureSet.testing === 'unit-e2e') {

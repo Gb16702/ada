@@ -86,7 +86,7 @@ export function createBasePackageJson(projectName: string): PackageJson {
       tailwindcss: '^4.0.6',
       'tailwind-merge': '^3.0.2',
       'vite-tsconfig-paths': '^5.1.4',
-      zod: '^3.24.0',
+      zod: '^4.1.13',
     },
     devDependencies: {
       '@biomejs/biome': '^2.2.4',

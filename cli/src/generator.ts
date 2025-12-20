@@ -200,9 +200,7 @@ async function generateReadme(
     featureList.push('API Client');
   }
 
-  if (features.envValidation) {
-    featureList.push('Environment Validation (Zod)');
-  }
+  featureList.push('Environment Validation (Zod)');
 
   if (features.testing !== 'none') {
     const testType =
@@ -359,12 +357,10 @@ async function generateEnvExample(
     .join(' ');
 
   sections.push(`# Application
-VITE_APP_TITLE="${appTitle}"`);
+VITE_APP_TITLE="${appTitle}"
 
-  if (features.apiClient || features.envValidation) {
-    sections.push(`# API
+# API
 VITE_API_URL=http://localhost:3000/api`);
-  }
 
   if (features.auth) {
     sections.push(`# Authentication (Better Auth)

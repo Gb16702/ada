@@ -269,7 +269,6 @@ async function promptCustomFeatures(): Promise<FeatureSet | null> {
     tanstackQuery: true,
     forms: forms as FormLibrary,
     apiClient: true,
-    envValidation: true,
     testing: testing as TestingOption,
     auth: includeAuth,
     state: state as StateOption,
