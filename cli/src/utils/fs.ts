@@ -1,17 +1,17 @@
-import { existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
+import { mkdir, readdir, stat } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 export async function copyDir(src: string, dest: string): Promise<void> {
-  mkdirSync(dest, { recursive: true });
+  await mkdir(dest, { recursive: true });
 
-  const entries = readdirSync(src);
+  const entries = await readdir(src);
 
   for (const entry of entries) {
     const srcPath = join(src, entry);
     const destPath = join(dest, entry);
-    const stat = statSync(srcPath);
+    const fileStat = await stat(srcPath);
 
-    if (stat.isDirectory()) {
+    if (fileStat.isDirectory()) {
       await copyDir(srcPath, destPath);
     } else {
       const content = await Bun.file(srcPath).text();
@@ -22,10 +22,7 @@ export async function copyDir(src: string, dest: string): Promise<void> {
 
 export async function writeFile(path: string, content: string): Promise<void> {
   const dir = dirname(path);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-
+  await mkdir(dir, { recursive: true });
   await Bun.write(path, content);
 }
 
@@ -33,39 +30,56 @@ export async function readFile(path: string): Promise<string> {
   return Bun.file(path).text();
 }
 
-export function ensureDir(path: string): void {
-  if (!existsSync(path)) {
-    mkdirSync(path, { recursive: true });
-  }
+export async function ensureDir(path: string): Promise<void> {
+  await mkdir(path, { recursive: true });
 }
 
-export function pathExists(path: string): boolean {
-  return existsSync(path);
-}
-
-export function isDirectory(path: string): boolean {
+export async function pathExists(path: string): Promise<boolean> {
   try {
-    return statSync(path).isDirectory();
+    await stat(path);
+    return true;
   } catch {
     return false;
   }
 }
 
-export function listFiles(dir: string, recursive = false): string[] {
-  const files: string[] = [];
+export async function isDirectory(path: string): Promise<boolean> {
+  try {
+    const fileStat = await stat(path);
+    return fileStat.isDirectory();
+  } catch {
+    return false;
+  }
+}
 
-  const entries = readdirSync(dir);
+export async function listFiles(dir: string, recursive = false): Promise<string[]> {
+  const files: string[] = [];
+  const entries = await readdir(dir);
 
   for (const entry of entries) {
     const fullPath = join(dir, entry);
-    const stat = statSync(fullPath);
+    const fileStat = await stat(fullPath);
 
-    if (stat.isDirectory() && recursive) {
-      files.push(...listFiles(fullPath, true).map((f) => join(entry, f)));
-    } else if (stat.isFile()) {
+    if (fileStat.isDirectory() && recursive) {
+      const subFiles = await listFiles(fullPath, true);
+      files.push(...subFiles.map((f) => join(entry, f)));
+    } else if (fileStat.isFile()) {
       files.push(entry);
     }
   }
 
   return files;
+}
+
+export async function listDirEntries(dir: string): Promise<{ name: string; isDirectory: boolean }[]> {
+  const entries = await readdir(dir);
+  const results: { name: string; isDirectory: boolean }[] = [];
+
+  for (const entry of entries) {
+    const fullPath = join(dir, entry);
+    const fileStat = await stat(fullPath);
+    results.push({ name: entry, isDirectory: fileStat.isDirectory() });
+  }
+
+  return results;
 }

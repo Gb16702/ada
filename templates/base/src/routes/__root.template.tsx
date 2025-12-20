@@ -26,11 +26,11 @@ function RootComponent() {
   /* @SLOT:PROVIDERS_SETUP */
   return (
     /* @SLOT:PROVIDERS_OPEN */
-    <html lang="en" /* @SLOT:DATA_THEME */>
+    <html lang="en">
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-screen bg-ds-background-100 font-sans antialiased">
+      <body className="min-h-screen">
         <Outlet />
         <Scripts />
       </body>

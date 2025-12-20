@@ -1,12 +1,6 @@
 import type { ThemeColor } from '../types';
 
-/**
- * Theme configuration for CLI prompts.
- * Actual theme CSS is in templates/base/src/theme.css (static, not generated).
- */
-
 export const THEME_OPTIONS: { value: ThemeColor; label: string; hint?: string }[] = [
-  { value: 'black', label: 'Black', hint: 'Neutral, professional' },
   { value: 'blue', label: 'Blue', hint: 'Default' },
   { value: 'indigo', label: 'Indigo' },
   { value: 'purple', label: 'Purple' },
@@ -15,6 +9,19 @@ export const THEME_OPTIONS: { value: ThemeColor; label: string; hint?: string }[
   { value: 'cyan', label: 'Cyan' },
   { value: 'green', label: 'Green' },
   { value: 'peach', label: 'Peach' },
+  { value: 'black', label: 'Black', hint: 'Monochrome' },
 ];
 
-export const THEME_COLORS = THEME_OPTIONS.map(opt => opt.value);
+export function generateActionColors(theme: ThemeColor): string {
+  if (theme === 'black') {
+    return `:root {
+    --action: var(--color-ds-gray-1000);
+    --action-hover: var(--color-ds-gray-900);
+}`;
+  }
+
+  return `:root {
+    --action: var(--color-ds-${theme}-700);
+    --action-hover: var(--color-ds-${theme}-800);
+}`;
+}

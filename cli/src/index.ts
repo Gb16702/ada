@@ -1,7 +1,15 @@
 #!/usr/bin/env bun
+import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
+import { fileURLToPath } from 'node:url';
 import { generateProject } from './generator';
 import { runPrompts } from './prompts';
+import { formatValidationResult, validateFeatureTemplates } from './utils/validation';
+import pkg from '../package.json';
+
+const VERSION = pkg.version;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 async function main(): Promise<void> {
   const { values, positionals } = parseArgs({
@@ -30,6 +38,10 @@ async function main(): Promise<void> {
         short: 'v',
         default: false,
       },
+      validate: {
+        type: 'boolean',
+        default: false,
+      },
     },
     allowPositionals: true,
   });
@@ -40,8 +52,15 @@ async function main(): Promise<void> {
   }
 
   if (values.version) {
-    console.log('create-ada v0.1.0');
+    console.log(`create-ada v${VERSION}`);
     process.exit(0);
+  }
+
+  if (values.validate) {
+    const templatesDir = join(__dirname, '..', '..', 'templates');
+    const result = await validateFeatureTemplates(templatesDir);
+    console.log(formatValidationResult(result));
+    process.exit(result.valid ? 0 : 1);
   }
 
   const projectName = positionals[0];
@@ -68,6 +87,7 @@ Options:
   -y, --yes              Skip confirmation prompts
   -h, --help             Show this help message
   -v, --version          Show version number
+  --validate             Validate features and templates integrity
 
 Presets:
   minimal     Core only - React, TanStack Start, TypeScript, Tailwind, Biome

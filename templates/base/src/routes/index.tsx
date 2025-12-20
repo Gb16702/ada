@@ -9,10 +9,8 @@ function HomePage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-8 p-8">
       <div className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight">Welcome to Ada</h1>
-        <p className="mt-4 text-lg text-ds-text-secondary">
-          A modern frontend boilerplate built with TanStack Start
-        </p>
+        <h1>Welcome to Ada</h1>
+        <p>A modern frontend boilerplate built with TanStack Start</p>
       </div>
 
       <div className="flex gap-4">
@@ -45,9 +43,9 @@ interface FeatureCardProps {
 
 function FeatureCard({ title, description }: FeatureCardProps) {
   return (
-    <div className="rounded-lg border border-ds-border-input bg-ds-background-100 p-6 shadow-sm">
-      <h3 className="font-semibold text-ds-text-primary">{title}</h3>
-      <p className="mt-2 text-sm text-ds-text-secondary">{description}</p>
+    <div className="rounded-lg border border-ds-border-input bg-ds-background-100 p-6">
+      <h3>{title}</h3>
+      <p>{description}</p>
     </div>
   );
 }

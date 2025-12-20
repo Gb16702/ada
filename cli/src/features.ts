@@ -173,6 +173,14 @@ export const featureDefinitions: Record<string, FeatureDefinition> = {
       'components/ui/dropdown-menu.tsx',
     ],
   },
+  'github-actions': {
+    id: 'github-actions',
+    name: 'GitHub Actions CI',
+    description: 'CI workflow for lint, typecheck, and tests (dynamically generated)',
+    templatePath: null,
+    dependencies: {},
+    files: ['.github/workflows/ci.yml'],
+  },
 };
 
 export function getRequiredFeatures(featureSet: FeatureSet): string[] {
@@ -214,6 +222,10 @@ export function getRequiredFeatures(featureSet: FeatureSet): string[] {
 
   if (featureSet.errorBoundaries) {
     features.push('error-boundaries');
+  }
+
+  if (featureSet.githubActions) {
+    features.push('github-actions');
   }
 
   for (const bundle of featureSet.uiBundles) {

@@ -1,0 +1,12 @@
+{
+    "typescript.tsdk": "cli/node_modules/typescript/lib",
+    "files.exclude": {
+        "**/node_modules": true
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "biomejs.biome"
+    },
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "biomejs.biome"
+    }
+}

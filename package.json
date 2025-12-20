@@ -10,6 +10,8 @@
     "dev": "bun run --cwd cli dev",
     "build": "bun run --cwd cli build",
     "test": "bun run --cwd cli dev test-app --preset standard --yes && cd cli/test-app && bun install && bun typecheck && cd .. && rm -rf test-app",
-    "create": "bun run --cwd cli dev"
+    "create": "bun run --cwd cli dev",
+    "preview": "bun run --cwd preview dev",
+    "preview:reset": "rm -rf preview && bun cli/src/index.ts preview --preset standard --theme blue --yes && cd preview && bun install"
   }
 }

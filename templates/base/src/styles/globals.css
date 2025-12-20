@@ -1,18 +1,8 @@
-/**
-* Global Styles
-*
-* Structure:
-* 1. @theme - Fonts, typography tokens, radius
-* 2. @layer base - Semantic classes (.ds-*) + HTML defaults
-*
-* Typography tokens: title-1, title-2, heading, subheading, body, caption, ui
-*/
-
+@import "./colors.css";
 @import "tailwindcss";
-@import "./theme.css";
 
 ::selection {
-    background: var(--color-ds-action);
+    background: var(--action);
     color: var(--color-ds-background-100);
 }
 
@@ -24,7 +14,7 @@
         Segoe UI Symbol;
 
     --text-title-1: 3rem;
-    --text-title-1--line-height: 1.05;
+    --text-title-1--line-height: 1.5;
     --text-title-1--letter-spacing: -0.02em;
     --text-title-1--font-weight: 700;
 
@@ -66,62 +56,74 @@
     --radius-full: 50px;
 }
 
+/* Action color - changes based on theme */
+/* @SLOT:ACTION */
+
+@utility bg-action {
+    background-color: var(--action);
+}
+@utility bg-action-hover {
+    background-color: var(--action-hover);
+}
+@utility text-action {
+    color: var(--action);
+}
+@utility ring-action {
+    --tw-ring-color: var(--action);
+}
+
+@utility ds-title-1 {
+    font-size: var(--text-title-1);
+    line-height: var(--text-title-1--line-height);
+    letter-spacing: var(--text-title-1--letter-spacing);
+    font-weight: var(--text-title-1--font-weight);
+}
+
+@utility ds-title-2 {
+    font-size: var(--text-title-2);
+    line-height: var(--text-title-2--line-height);
+    letter-spacing: var(--text-title-2--letter-spacing);
+    font-weight: var(--text-title-2--font-weight);
+}
+
+@utility ds-heading {
+    font-size: var(--text-heading);
+    line-height: var(--text-heading--line-height);
+    letter-spacing: var(--text-heading--letter-spacing);
+    font-weight: var(--text-heading--font-weight);
+}
+
+@utility ds-subheading {
+    font-size: var(--text-subheading);
+    line-height: var(--text-subheading--line-height);
+    letter-spacing: var(--text-subheading--letter-spacing);
+    font-weight: var(--text-subheading--font-weight);
+}
+
+@utility ds-body {
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    letter-spacing: var(--text-body--letter-spacing);
+    font-weight: var(--text-body--font-weight);
+}
+
+@utility ds-caption {
+    font-size: var(--text-caption);
+    line-height: var(--text-caption--line-height);
+    letter-spacing: var(--text-caption--letter-spacing);
+    font-weight: var(--text-caption--font-weight);
+}
+
+@utility ds-ui {
+    font-size: var(--text-ui);
+    line-height: var(--text-ui--line-height);
+    letter-spacing: var(--text-ui--letter-spacing);
+    font-weight: var(--text-ui--font-weight);
+}
+
 @layer base {
     body {
-        @apply bg-ds-background-100 text-ds-text-primary font-sans antialiased;
-        font-size: var(--text-body);
-        line-height: var(--text-body--line-height);
-        letter-spacing: var(--text-body--letter-spacing);
-        font-weight: var(--text-body--font-weight);
-    }
-
-    .ds-title-1 {
-        font-size: var(--text-title-1);
-        line-height: var(--text-title-1--line-height);
-        letter-spacing: var(--text-title-1--letter-spacing);
-        font-weight: var(--text-title-1--font-weight);
-    }
-
-    .ds-title-2 {
-        font-size: var(--text-title-2);
-        line-height: var(--text-title-2--line-height);
-        letter-spacing: var(--text-title-2--letter-spacing);
-        font-weight: var(--text-title-2--font-weight);
-    }
-
-    .ds-heading {
-        font-size: var(--text-heading);
-        line-height: var(--text-heading--line-height);
-        letter-spacing: var(--text-heading--letter-spacing);
-        font-weight: var(--text-heading--font-weight);
-    }
-
-    .ds-subheading {
-        font-size: var(--text-subheading);
-        line-height: var(--text-subheading--line-height);
-        letter-spacing: var(--text-subheading--letter-spacing);
-        font-weight: var(--text-subheading--font-weight);
-    }
-
-    .ds-body {
-        font-size: var(--text-body);
-        line-height: var(--text-body--line-height);
-        letter-spacing: var(--text-body--letter-spacing);
-        font-weight: var(--text-body--font-weight);
-    }
-
-    .ds-caption {
-        font-size: var(--text-caption);
-        line-height: var(--text-caption--line-height);
-        letter-spacing: var(--text-caption--letter-spacing);
-        font-weight: var(--text-caption--font-weight);
-    }
-
-    .ds-ui {
-        font-size: var(--text-ui);
-        line-height: var(--text-ui--line-height);
-        letter-spacing: var(--text-ui--letter-spacing);
-        font-weight: var(--text-ui--font-weight);
+        @apply bg-ds-background-100 text-ds-text-primary font-sans antialiased ds-body;
     }
 
     h1 {
@@ -142,7 +144,6 @@
 
     h5,
     h6 {
-        @apply ds-body;
-        font-weight: 500;
+        @apply ds-body font-medium;
     }
 }

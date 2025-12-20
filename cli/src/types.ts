@@ -36,13 +36,14 @@ export interface FeatureSet {
   state: StateOption;
   errorBoundaries: boolean;
   uiBundles: UIBundle[];
+  githubActions: boolean;
 }
 
 export interface FeatureDefinition {
   id: string;
   name: string;
   description: string;
-  templatePath: string;
+  templatePath: string | null;
   dependencies: Record<string, string>;
   devDependencies?: Record<string, string>;
   files: string[];

@@ -4,13 +4,13 @@ import { fileURLToPath } from 'node:url';
 import pc from 'picocolors';
 import { getFeatureDependencies, getRequiredFeatures } from './features';
 import type { FeatureSet, ProjectConfig, ThemeColor } from './types';
-import { ensureDir, pathExists, readFile, writeFile } from './utils/fs';
+import { ensureDir, listDirEntries, pathExists, readFile, writeFile } from './utils/fs';
 import {
     addTestingScripts,
     createBasePackageJson,
     mergePackageJson,
 } from './utils/packages';
-import { getOutputFilename, isTemplateFile, processTemplate } from './utils/template';
+import { generateActionColors } from './utils/theme';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -23,7 +23,7 @@ export async function generateProject(config: ProjectConfig): Promise<boolean> {
   const spinner = p.spinner();
   const targetDir = join(process.cwd(), config.name);
 
-  if (pathExists(targetDir)) {
+  if (await pathExists(targetDir)) {
     p.log.error(`Directory ${pc.red(config.name)} already exists.`);
     return false;
   }
@@ -31,12 +31,12 @@ export async function generateProject(config: ProjectConfig): Promise<boolean> {
   try {
     spinner.start('Creating project structure...');
 
-    ensureDir(targetDir);
+    await ensureDir(targetDir);
 
     const templatesDir = getTemplatesDir();
     const baseDir = join(templatesDir, 'base');
 
-    await copyBaseTemplate(baseDir, targetDir, config.name);
+    await copyBaseTemplate(baseDir, targetDir);
 
     spinner.message('Adding selected features...');
 
@@ -51,11 +51,23 @@ export async function generateProject(config: ProjectConfig): Promise<boolean> {
 
     await generateReadme(targetDir, config);
 
-    await generateRootLayout(templatesDir, targetDir, config.features, config.theme);
+    await generateRootLayout(templatesDir, targetDir, config.features);
+
+    spinner.message('Applying theme...');
+
+    await applyTheme(targetDir, config.theme);
 
     spinner.message('Generating .env.example...');
 
     await generateEnvExample(targetDir, config.name, config.features);
+
+    if (config.features.githubActions) {
+      spinner.message('Generating CI workflow...');
+      await generateCIWorkflow(targetDir, config.features);
+    }
+
+    spinner.message('Initializing git repository...');
+    await initGitRepository(targetDir);
 
     spinner.stop('Project created successfully!');
 
@@ -73,37 +85,25 @@ export async function generateProject(config: ProjectConfig): Promise<boolean> {
 
 async function copyBaseTemplate(
   baseDir: string,
-  targetDir: string,
-  projectName: string
+  targetDir: string
 ): Promise<void> {
-  const { readdirSync, statSync } = await import('node:fs');
-
   async function copyRecursive(src: string, dest: string): Promise<void> {
-    ensureDir(dest);
+    await ensureDir(dest);
 
-    const entries = readdirSync(src);
+    const entries = await listDirEntries(src);
 
     for (const entry of entries) {
-      const srcPath = join(src, entry);
-      const stat = statSync(srcPath);
+      const srcPath = join(src, entry.name);
 
-      if (stat.isDirectory()) {
-        await copyRecursive(srcPath, join(dest, entry));
+      if (entry.isDirectory) {
+        await copyRecursive(srcPath, join(dest, entry.name));
       } else {
-        // Skip slot template files (processed separately)
-        if (entry.endsWith('.template.tsx')) {
+        if (entry.name.endsWith('.template.tsx')) {
           continue;
         }
 
-        let content = await readFile(srcPath);
-        let destFilename = entry;
-
-        if (isTemplateFile(entry)) {
-          content = processTemplate(content, { projectName });
-          destFilename = getOutputFilename(entry);
-        }
-
-        await writeFile(join(dest, destFilename), content);
+        const content = await readFile(srcPath);
+        await writeFile(join(dest, entry.name), content);
       }
     }
   }
@@ -116,30 +116,32 @@ async function copyFeatureTemplates(
   targetDir: string,
   featureIds: string[]
 ): Promise<void> {
-  const { readdirSync, statSync } = await import('node:fs');
   const featuresDir = join(templatesDir, 'features');
 
   for (const featureId of featureIds) {
+    if (featureId === 'github-actions') {
+      continue;
+    }
+
     const featureDir = join(featuresDir, featureId);
 
-    if (!pathExists(featureDir)) {
+    if (!(await pathExists(featureDir))) {
       continue;
     }
 
     async function copyFeatureRecursive(src: string, dest: string): Promise<void> {
-      ensureDir(dest);
+      await ensureDir(dest);
 
-      const entries = readdirSync(src);
+      const entries = await listDirEntries(src);
 
       for (const entry of entries) {
-        const srcPath = join(src, entry);
-        const stat = statSync(srcPath);
+        const srcPath = join(src, entry.name);
 
-        if (stat.isDirectory()) {
-          await copyFeatureRecursive(srcPath, join(dest, entry));
+        if (entry.isDirectory) {
+          await copyFeatureRecursive(srcPath, join(dest, entry.name));
         } else {
           const content = await readFile(srcPath);
-          await writeFile(join(dest, entry), content);
+          await writeFile(join(dest, entry.name), content);
         }
       }
     }
@@ -380,8 +382,7 @@ VITE_AUTH_OIDC_PROVIDERS=`);
 async function generateRootLayout(
   templatesDir: string,
   targetDir: string,
-  features: FeatureSet,
-  theme: ThemeColor
+  features: FeatureSet
 ): Promise<void> {
   const templatePath = join(templatesDir, 'base', 'src', 'routes', '__root.template.tsx');
   let template = await readFile(templatePath);
@@ -392,9 +393,21 @@ async function generateRootLayout(
   template = template.replace('/* @SLOT:PROVIDERS_SETUP */', slots.providersSetup);
   template = template.replace('/* @SLOT:PROVIDERS_OPEN */', slots.providersOpen);
   template = template.replace('/* @SLOT:PROVIDERS_CLOSE */', slots.providersClose);
-  template = template.replace('/* @SLOT:DATA_THEME */', `data-theme="${theme}"`);
 
   await writeFile(join(targetDir, 'src', 'routes', '__root.tsx'), template);
+}
+
+async function applyTheme(
+  targetDir: string,
+  theme: ThemeColor
+): Promise<void> {
+  const globalsPath = join(targetDir, 'src', 'styles', 'globals.css');
+  let content = await readFile(globalsPath);
+
+  const actionColors = generateActionColors(theme);
+  content = content.replace('/* @SLOT:ACTION */', actionColors);
+
+  await writeFile(globalsPath, content);
 }
 
 interface RootLayoutSlots {
@@ -449,6 +462,22 @@ function buildRootLayoutSlots(features: FeatureSet): RootLayoutSlots {
   };
 }
 
+async function initGitRepository(targetDir: string): Promise<void> {
+  const proc = Bun.spawn(['git', 'init'], {
+    cwd: targetDir,
+    stdout: 'ignore',
+    stderr: 'ignore',
+  });
+  await proc.exited;
+
+  const branchProc = Bun.spawn(['git', 'branch', '-M', 'main'], {
+    cwd: targetDir,
+    stdout: 'ignore',
+    stderr: 'ignore',
+  });
+  await branchProc.exited;
+}
+
 function printNextSteps(projectName: string): void {
   p.note(
     `cd ${projectName}
@@ -458,4 +487,220 @@ bun dev`,
   );
 
   p.outro(pc.green('Happy coding!'));
+}
+
+async function generateCIWorkflow(
+  targetDir: string,
+  features: FeatureSet
+): Promise<void> {
+  if (!features.githubActions) {
+    return;
+  }
+
+  const hasTests = features.testing !== 'none';
+  const hasE2E = features.testing === 'unit-e2e';
+
+  const buildNeeds = hasTests ? '[test]' : '[lint, typecheck]';
+  const bundleAnalysisNeeds = '[build]';
+
+  let yaml = `name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: \${{ github.workflow }}-\${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: \${{ runner.os }}-bun-\${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            \${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun lint
+
+      - name: Format check
+        run: bun format --check
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: \${{ runner.os }}-bun-\${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            \${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Type check
+        run: bun typecheck
+`;
+
+  if (hasTests) {
+    yaml += `
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: \${{ runner.os }}-bun-\${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            \${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run tests
+        run: bun test
+`;
+  }
+
+  if (hasE2E) {
+    yaml += `
+  test-e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: \${{ runner.os }}-bun-\${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            \${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: bun test:e2e
+`;
+  }
+
+  const buildNeedsValue = hasE2E ? '[test, test-e2e]' : buildNeeds;
+
+  yaml += `
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: ${buildNeedsValue}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: \${{ runner.os }}-bun-\${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            \${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: .output/
+          retention-days: 7
+
+  bundle-analysis:
+    name: Bundle Analysis
+    runs-on: ubuntu-latest
+    needs: ${bundleAnalysisNeeds}
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: \${{ runner.os }}-bun-\${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            \${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build and analyze
+        run: bun run build 2>&1 | tee build-output.txt
+
+      - name: Extract bundle sizes
+        id: bundle
+        run: |
+          echo "## Bundle Size Report" >> \$GITHUB_STEP_SUMMARY
+          echo "" >> \$GITHUB_STEP_SUMMARY
+          echo "\\\`\\\`\\\`" >> \$GITHUB_STEP_SUMMARY
+          grep -E "\\.js|\\.css" build-output.txt | head -20 >> \$GITHUB_STEP_SUMMARY || echo "No bundle info found" >> \$GITHUB_STEP_SUMMARY
+          echo "\\\`\\\`\\\`" >> \$GITHUB_STEP_SUMMARY
+`;
+
+  const workflowDir = join(targetDir, '.github', 'workflows');
+  await ensureDir(workflowDir);
+  await writeFile(join(workflowDir, 'ci.yml'), yaml);
 }

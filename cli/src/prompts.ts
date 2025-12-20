@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import { getPresetFeatures, getPresetList } from './presets';
@@ -13,6 +15,11 @@ import type {
 } from './types';
 import { THEME_OPTIONS } from './utils/theme';
 
+function directoryExists(name: string): boolean {
+  const targetPath = join(process.cwd(), name);
+  return existsSync(targetPath);
+}
+
 export async function runPrompts(
   projectName?: string,
   presetArg?: string,
@@ -21,10 +28,19 @@ export async function runPrompts(
 ): Promise<ProjectConfig | null> {
   p.intro(pc.bgCyan(pc.black(' create-ada ')));
 
-  const name = projectName ?? (await promptProjectName());
-  if (p.isCancel(name)) {
-    p.cancel('Operation cancelled.');
-    return null;
+  let name: string | symbol;
+  if (projectName) {
+    if (directoryExists(projectName)) {
+      p.log.error(`Directory "${projectName}" already exists`);
+      return null;
+    }
+    name = projectName;
+  } else {
+    name = await promptProjectName();
+    if (p.isCancel(name)) {
+      p.cancel('Operation cancelled.');
+      return null;
+    }
   }
 
   const presetName = presetArg as PresetName | undefined;
@@ -83,11 +99,15 @@ async function promptProjectName(): Promise<string | symbol> {
   return p.text({
     message: 'Project name:',
     placeholder: 'my-project',
-    defaultValue: 'my-project',
     validate: (value) => {
-      if (!value) return undefined;
+      if (!value) {
+        return 'Project name is required';
+      }
       if (!/^[a-z0-9-]+$/.test(value)) {
         return 'Project name must be lowercase with dashes only';
+      }
+      if (directoryExists(value)) {
+        return `Directory "${value}" already exists`;
       }
       return undefined;
     },
@@ -235,6 +255,16 @@ async function promptCustomFeatures(): Promise<FeatureSet | null> {
     return null;
   }
 
+  const includeGithubActions = await p.confirm({
+    message: 'Include GitHub Actions CI?',
+    initialValue: false,
+  });
+
+  if (p.isCancel(includeGithubActions)) {
+    p.cancel('Operation cancelled.');
+    return null;
+  }
+
   return {
     tanstackQuery: true,
     forms: forms as FormLibrary,
@@ -245,6 +275,7 @@ async function promptCustomFeatures(): Promise<FeatureSet | null> {
     state: state as StateOption,
     errorBoundaries: includeErrorBoundaries,
     uiBundles: uiBundles as UIBundle[],
+    githubActions: includeGithubActions,
   };
 }
 
@@ -280,6 +311,9 @@ async function confirmConfig(
   );
   p.log.message(
     `  ${features.errorBoundaries ? pc.green('✓') : pc.dim('✗')} Error Boundaries`
+  );
+  p.log.message(
+    `  ${features.githubActions ? pc.green('✓') : pc.dim('✗')} GitHub Actions CI`
   );
   p.log.message(`  ${pc.cyan('UI Bundles:')} ${features.uiBundles.join(', ')}`);
   p.log.message(pc.dim('─'.repeat(50)));

@@ -15,6 +15,7 @@ export const presets: Record<PresetName, PresetDefinition> = {
       state: 'none',
       errorBoundaries: false,
       uiBundles: ['core'],
+      githubActions: false,
     },
   },
   standard: {
@@ -31,12 +32,13 @@ export const presets: Record<PresetName, PresetDefinition> = {
       state: 'none',
       errorBoundaries: false,
       uiBundles: ['core'],
+      githubActions: false,
     },
   },
   enterprise: {
     name: 'enterprise',
     label: 'Enterprise',
-    description: 'Full-featured - Includes auth, state management, E2E tests, and error handling',
+    description: 'Full-featured - Includes auth, state management, E2E tests, CI, and error handling',
     features: {
       tanstackQuery: true,
       forms: 'tanstack-form',
@@ -47,6 +49,7 @@ export const presets: Record<PresetName, PresetDefinition> = {
       state: 'zustand',
       errorBoundaries: true,
       uiBundles: ['core'],
+      githubActions: true,
     },
   },
   custom: {
@@ -63,6 +66,7 @@ export const presets: Record<PresetName, PresetDefinition> = {
       state: 'none',
       errorBoundaries: false,
       uiBundles: ['core'],
+      githubActions: false,
     },
   },
 };
