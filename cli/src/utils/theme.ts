@@ -15,13 +15,13 @@ export const THEME_OPTIONS: { value: ThemeColor; label: string; hint?: string }[
 export function generateActionColors(theme: ThemeColor): string {
   if (theme === 'black') {
     return `:root {
-    --action: var(--color-ds-gray-1000);
-    --action-hover: var(--color-ds-gray-900);
+  --action: var(--color-ds-gray-1000);
+  --action-hover: var(--color-ds-gray-900);
 }`;
   }
 
   return `:root {
-    --action: var(--color-ds-${theme}-700);
-    --action-hover: var(--color-ds-${theme}-800);
+  --action: var(--color-ds-${theme}-700);
+  --action-hover: var(--color-ds-${theme}-800);
 }`;
 }

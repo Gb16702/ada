@@ -4,14 +4,10 @@ import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import { getPresetFeatures, getPresetList } from './presets';
 import type {
-    FeatureSet,
-    FormLibrary,
-    PresetName,
-    ProjectConfig,
-    StateOption,
-    TestingOption,
-    ThemeColor,
-    UIBundle,
+  FeatureSet,
+  PresetName,
+  ProjectConfig,
+  ThemeColor,
 } from './types';
 import { THEME_OPTIONS } from './utils/theme';
 
@@ -137,120 +133,32 @@ async function promptTheme(): Promise<ThemeColor | symbol> {
 }
 
 async function promptCustomFeatures(): Promise<FeatureSet | null> {
-  const forms = await p.select({
-    message: 'Forms library:',
-    options: [
-      {
-        value: 'tanstack-form' as const,
-        label: 'TanStack Form',
-        hint: 'Recommended - Type-safe, headless',
-      },
-      {
-        value: 'react-hook-form' as const,
-        label: 'React Hook Form',
-        hint: 'Performant, widely used',
-      },
-      { value: 'none' as const, label: 'None', hint: 'No form library' },
-    ],
-    initialValue: 'tanstack-form' as FormLibrary,
+  const includeTanstackQuery = await p.confirm({
+    message: 'Include TanStack Query (data fetching)?',
+    initialValue: true,
   });
 
-  if (p.isCancel(forms)) {
+  if (p.isCancel(includeTanstackQuery)) {
     p.cancel('Operation cancelled.');
     return null;
   }
 
-  const testing = await p.select({
-    message: 'Testing:',
-    options: [
-      { value: 'none' as const, label: 'None', hint: 'No testing setup' },
-      {
-        value: 'unit' as const,
-        label: 'Unit tests',
-        hint: 'Bun test + Testing Library',
-      },
-      {
-        value: 'unit-e2e' as const,
-        label: 'Unit + E2E',
-        hint: 'Unit tests + Playwright',
-      },
-    ],
-    initialValue: 'unit' as TestingOption,
+  const includeApiClient = await p.confirm({
+    message: 'Include API client?',
+    initialValue: true,
   });
 
-  if (p.isCancel(testing)) {
+  if (p.isCancel(includeApiClient)) {
     p.cancel('Operation cancelled.');
     return null;
   }
 
-  const state = await p.select({
-    message: 'Global state management:',
-    options: [
-      {
-        value: 'none' as const,
-        label: 'None',
-        hint: 'Use React context or TanStack Query',
-      },
-      { value: 'zustand' as const, label: 'Zustand', hint: 'Lightweight, flexible' },
-    ],
-    initialValue: 'none' as StateOption,
+  const includeTesting = await p.confirm({
+    message: 'Include unit tests (Bun + Testing Library)?',
+    initialValue: true,
   });
 
-  if (p.isCancel(state)) {
-    p.cancel('Operation cancelled.');
-    return null;
-  }
-
-  const uiBundles = await p.multiselect({
-    message: 'UI component bundles:',
-    options: [
-      {
-        value: 'core' as const,
-        label: 'Core only',
-        hint: 'Button, Input, Label, Toast',
-      },
-      {
-        value: 'forms' as const,
-        label: 'Forms',
-        hint: 'Select, Checkbox, Radio, Switch',
-      },
-      {
-        value: 'data-display' as const,
-        label: 'Data display',
-        hint: 'Table, Badge, Avatar',
-      },
-      {
-        value: 'overlays' as const,
-        label: 'Overlays',
-        hint: 'Dialog, Sheet, Dropdown',
-      },
-      { value: 'full' as const, label: 'Full UI kit', hint: 'All components' },
-    ],
-    initialValues: ['core'],
-    required: true,
-  });
-
-  if (p.isCancel(uiBundles)) {
-    p.cancel('Operation cancelled.');
-    return null;
-  }
-
-  const includeAuth = await p.confirm({
-    message: 'Include auth skeleton (Better Auth)?',
-    initialValue: false,
-  });
-
-  if (p.isCancel(includeAuth)) {
-    p.cancel('Operation cancelled.');
-    return null;
-  }
-
-  const includeErrorBoundaries = await p.confirm({
-    message: 'Include error boundaries?',
-    initialValue: false,
-  });
-
-  if (p.isCancel(includeErrorBoundaries)) {
+  if (p.isCancel(includeTesting)) {
     p.cancel('Operation cancelled.');
     return null;
   }
@@ -266,14 +174,9 @@ async function promptCustomFeatures(): Promise<FeatureSet | null> {
   }
 
   return {
-    tanstackQuery: true,
-    forms: forms as FormLibrary,
-    apiClient: true,
-    testing: testing as TestingOption,
-    auth: includeAuth,
-    state: state as StateOption,
-    errorBoundaries: includeErrorBoundaries,
-    uiBundles: uiBundles as UIBundle[],
+    tanstackQuery: includeTanstackQuery,
+    apiClient: includeApiClient,
+    testing: includeTesting,
     githubActions: includeGithubActions,
   };
 }
@@ -295,26 +198,15 @@ async function confirmConfig(
     `  ${features.tanstackQuery ? pc.green('✓') : pc.dim('✗')} TanStack Query`
   );
   p.log.message(
-    `  ${features.forms !== 'none' ? pc.green('✓') : pc.dim('✗')} Forms (${features.forms})`
-  );
-  p.log.message(
     `  ${features.apiClient ? pc.green('✓') : pc.dim('✗')} API Client`
   );
   p.log.message(`  ${pc.green('✓')} Env Validation ${pc.dim('(always enabled)')}`);
   p.log.message(
-    `  ${features.testing !== 'none' ? pc.green('✓') : pc.dim('✗')} Testing (${features.testing})`
-  );
-  p.log.message(`  ${features.auth ? pc.green('✓') : pc.dim('✗')} Auth`);
-  p.log.message(
-    `  ${features.state !== 'none' ? pc.green('✓') : pc.dim('✗')} State (${features.state})`
-  );
-  p.log.message(
-    `  ${features.errorBoundaries ? pc.green('✓') : pc.dim('✗')} Error Boundaries`
+    `  ${features.testing ? pc.green('✓') : pc.dim('✗')} Unit Tests`
   );
   p.log.message(
     `  ${features.githubActions ? pc.green('✓') : pc.dim('✗')} GitHub Actions CI`
   );
-  p.log.message(`  ${pc.cyan('UI Bundles:')} ${features.uiBundles.join(', ')}`);
   p.log.message(pc.dim('─'.repeat(50)));
 
   return p.confirm({

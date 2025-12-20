@@ -9,6 +9,7 @@ preview/
 
 # Claude
 .claude/
+.mcp.json
 
 # OS
 .DS_Store
@@ -18,3 +19,5 @@ preview/
 
 # IDE
 .vscode/
+
+preview/

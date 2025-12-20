@@ -1,10 +1,10 @@
+/* @SLOT:IMPORTS */
 import {
   HeadContent,
   Outlet,
   Scripts,
   createRootRoute,
 } from '@tanstack/react-router';
-/* @SLOT:IMPORTS */
 
 import appCss from '../styles/globals.css?url';
 
@@ -15,9 +15,7 @@ export const Route = createRootRoute({
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { title: 'Ada App' },
     ],
-    links: [
-      { rel: 'stylesheet', href: appCss },
-    ],
+    links: [{ rel: 'stylesheet', href: appCss }],
   }),
   component: RootComponent,
 });

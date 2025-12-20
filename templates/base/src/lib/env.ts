@@ -8,11 +8,12 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(import.meta.env);
 
 if (!parsed.success) {
-  console.error('❌ Invalid environment variables:', parsed.error.format());
-  throw new Error('Invalid environment variables');
+  throw new Error(
+    `Invalid environment variables: ${JSON.stringify(parsed.error.format())}`
+  );
 }
 
 export const env = Object.freeze({
-  apiUrl: parsed.data.VITE_API_URL,
+  apiUrl: parsed.data.VITE_API_URL ?? null,
   appTitle: parsed.data.VITE_APP_TITLE,
 });

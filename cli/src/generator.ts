@@ -69,6 +69,12 @@ export async function generateProject(config: ProjectConfig): Promise<boolean> {
     spinner.message('Initializing git repository...');
     await initGitRepository(targetDir);
 
+    spinner.message('Setting up husky...');
+    await generateHuskyPreCommit(targetDir);
+
+    spinner.message('Formatting files...');
+    await formatGeneratedFiles(targetDir);
+
     spinner.stop('Project created successfully!');
 
     printNextSteps(config.name);
@@ -161,11 +167,8 @@ async function generatePackageJson(
 
   pkg = mergePackageJson(pkg, { dependencies, devDependencies });
 
-  if (
-    config.features.testing === 'unit' ||
-    config.features.testing === 'unit-e2e'
-  ) {
-    pkg = addTestingScripts(pkg, config.features.testing === 'unit-e2e');
+  if (config.features.testing) {
+    pkg = addTestingScripts(pkg);
   }
 
   const content = JSON.stringify(pkg, null, 2) + '\n';
@@ -190,34 +193,14 @@ async function generateReadme(
     featureList.push('TanStack Query');
   }
 
-  if (features.forms !== 'none') {
-    const formLib =
-      features.forms === 'tanstack-form' ? 'TanStack Form' : 'React Hook Form';
-    featureList.push(`Forms (${formLib})`);
-  }
-
   if (features.apiClient) {
     featureList.push('API Client');
   }
 
   featureList.push('Environment Validation (Zod)');
 
-  if (features.testing !== 'none') {
-    const testType =
-      features.testing === 'unit' ? 'Unit Tests (Bun)' : 'Unit + E2E Tests';
-    featureList.push(testType);
-  }
-
-  if (features.auth) {
-    featureList.push('Auth Skeleton (Better Auth)');
-  }
-
-  if (features.state !== 'none') {
-    featureList.push('Zustand (State Management)');
-  }
-
-  if (features.errorBoundaries) {
-    featureList.push('Error Boundaries');
+  if (features.testing) {
+    featureList.push('Unit Tests (Bun)');
   }
 
   const readme = `# ${config.name}
@@ -255,8 +238,7 @@ bun start
 | \`bun format\` | Format code |
 | \`bun check\` | Run all checks |
 | \`bun typecheck\` | Type check |
-${features.testing !== 'none' ? '| `bun test` | Run unit tests |' : ''}
-${features.testing === 'unit-e2e' ? '| `bun test:e2e` | Run E2E tests |' : ''}
+${features.testing ? '| `bun test` | Run unit tests |' : ''}
 
 ## Architecture
 
@@ -267,12 +249,10 @@ This project follows a **feature-first** architecture:
 │   ├── routes/          # File-based routing
 │   ├── components/ui/   # shadcn/ui components
 │   ├── lib/             # Utilities and helpers
-${features.forms !== 'none' ? '│   ├── forms/           # Form abstraction layer' : ''}
-${features.auth ? '│   ├── auth/            # Authentication' : ''}
 │   ├── router.tsx       # Router configuration
 │   └── styles/          # CSS (globals.css, theme.css)
 ├── features/            # Business logic modules
-${features.testing !== 'none' ? '├── tests/               # Test files' : ''}
+${features.testing ? '├── tests/               # Test files' : ''}
 └── public/              # Static assets
 \`\`\`
 
@@ -284,57 +264,6 @@ This project follows an **SSR-first** approach:
 - Critical data is loaded via server loaders
 - Client-side rendering is used for interactivity only
 - SEO and performance are prioritized
-
-${
-  features.forms !== 'none'
-    ? `
-## Forms
-
-Forms use an abstraction layer to decouple business logic from the form library:
-
-\`\`\`typescript
-import { Form, Field, useAppForm } from '@/forms';
-
-function MyForm() {
-  const form = useAppForm({
-    schema: mySchema,
-    defaultValues: { name: '' },
-    onSubmit: async (values) => { /* ... */ },
-  });
-
-  return (
-    <Form form={form}>
-      <Field name="name" label="Name" />
-      <button type="submit">Submit</button>
-    </Form>
-  );
-}
-\`\`\`
-`
-    : ''
-}
-
-${
-  features.auth
-    ? `
-## Authentication
-
-Auth uses a skeleton ready to connect to Better Auth:
-
-\`\`\`typescript
-import { useAuth } from '@/auth';
-
-function Profile() {
-  const { user, isAuthenticated, logout } = useAuth();
-
-  if (!isAuthenticated) return <LoginButton />;
-
-  return <Button onClick={logout}>{user?.name}</Button>;
-}
-\`\`\`
-`
-    : ''
-}
 
 ## License
 
@@ -361,15 +290,6 @@ VITE_APP_TITLE="${appTitle}"
 
 # API
 VITE_API_URL=http://localhost:3000/api`);
-
-  if (features.auth) {
-    sections.push(`# Authentication (Better Auth)
-VITE_AUTH_URL=http://localhost:3000/api/auth
-# Set to "false" to disable magic link authentication
-VITE_AUTH_MAGIC_LINK=true
-# Comma-separated list of OIDC providers (e.g., "google,github")
-VITE_AUTH_OIDC_PROVIDERS=`);
-  }
 
   const content = sections.join('\n\n') + '\n';
   await writeFile(join(targetDir, '.env.example'), content);
@@ -414,14 +334,16 @@ interface RootLayoutSlots {
 }
 
 function buildRootLayoutSlots(features: FeatureSet): RootLayoutSlots {
-  const imports: string[] = [];
   const providersOpen: string[] = [];
   const providersClose: string[] = [];
+  let imports = '';
   let providersSetup = '';
 
   if (features.tanstackQuery) {
-    imports.push("import { useState } from 'react';");
-    imports.push("import { QueryClient, QueryClientProvider } from '@tanstack/react-query';");
+    // Imports in biome's expected order: @tanstack/react-query, then react
+    imports = `import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
+`;
 
     providersSetup = `const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
@@ -436,12 +358,6 @@ function buildRootLayoutSlots(features: FeatureSet): RootLayoutSlots {
     providersClose.unshift('</QueryClientProvider>');
   }
 
-  if (features.auth) {
-    imports.push("import { AuthProvider } from '@/auth';");
-    providersOpen.push('<AuthProvider>');
-    providersClose.unshift('</AuthProvider>');
-  }
-
   const finalProvidersOpen = providersOpen.length > 0
     ? providersOpen.join('\n      ')
     : '';
@@ -451,7 +367,7 @@ function buildRootLayoutSlots(features: FeatureSet): RootLayoutSlots {
     : '';
 
   return {
-    imports: imports.length > 0 ? imports.join('\n') : '',
+    imports,
     providersSetup,
     providersOpen: finalProvidersOpen,
     providersClose: finalProvidersClose,
@@ -474,6 +390,25 @@ async function initGitRepository(targetDir: string): Promise<void> {
   await branchProc.exited;
 }
 
+async function generateHuskyPreCommit(targetDir: string): Promise<void> {
+  const huskyDir = join(targetDir, '.husky');
+  await ensureDir(huskyDir);
+
+  const preCommitContent = `bun run pre-commit
+`;
+
+  await writeFile(join(huskyDir, 'pre-commit'), preCommitContent);
+}
+
+async function formatGeneratedFiles(targetDir: string): Promise<void> {
+  const proc = Bun.spawn(['bunx', 'biome', 'check', '--write', '.'], {
+    cwd: targetDir,
+    stdout: 'ignore',
+    stderr: 'ignore',
+  });
+  await proc.exited;
+}
+
 function printNextSteps(projectName: string): void {
   p.note(
     `cd ${projectName}
@@ -493,11 +428,8 @@ async function generateCIWorkflow(
     return;
   }
 
-  const hasTests = features.testing !== 'none';
-  const hasE2E = features.testing === 'unit-e2e';
-
+  const hasTests = features.testing;
   const buildNeeds = hasTests ? '[test]' : '[lint, typecheck]';
-  const bundleAnalysisNeeds = '[build]';
 
   let yaml = `name: CI
 
@@ -533,11 +465,8 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Lint
-        run: bun lint
-
-      - name: Format check
-        run: bun format --check
+      - name: Lint & Format
+        run: bunx biome ci .
 
   typecheck:
     name: Type Check
@@ -593,45 +522,11 @@ jobs:
 `;
   }
 
-  if (hasE2E) {
-    yaml += `
-  test-e2e:
-    name: E2E Tests
-    runs-on: ubuntu-latest
-    needs: [lint, typecheck]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: \${{ runner.os }}-bun-\${{ hashFiles('**/bun.lockb') }}
-          restore-keys: |
-            \${{ runner.os }}-bun-
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium
-
-      - name: Run E2E tests
-        run: bun test:e2e
-`;
-  }
-
-  const buildNeedsValue = hasE2E ? '[test, test-e2e]' : buildNeeds;
-
   yaml += `
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: ${buildNeedsValue}
+    needs: ${buildNeeds}
     steps:
       - uses: actions/checkout@v4
 
@@ -663,7 +558,7 @@ jobs:
   bundle-analysis:
     name: Bundle Analysis
     runs-on: ubuntu-latest
-    needs: ${bundleAnalysisNeeds}
+    needs: [build]
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4

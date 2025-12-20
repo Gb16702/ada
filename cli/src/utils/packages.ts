@@ -68,6 +68,11 @@ export function createBasePackageJson(projectName: string): PackageJson {
       format: 'biome format --write .',
       check: 'biome check --write .',
       typecheck: 'tsc --noEmit',
+      prepare: 'husky',
+      'pre-commit': 'lint-staged',
+    },
+    'lint-staged': {
+      '*.{ts,tsx,js,jsx,json,css}': 'biome check --write --no-errors-on-unmatched',
     },
     dependencies: {
       '@radix-ui/react-label': '^2.1.8',
@@ -89,28 +94,20 @@ export function createBasePackageJson(projectName: string): PackageJson {
       zod: '^4.1.13',
     },
     devDependencies: {
-      '@biomejs/biome': '^2.2.4',
+      '@biomejs/biome': '^1.9.4',
       '@types/react': '^19.2.0',
       '@types/react-dom': '^19.2.0',
       '@vitejs/plugin-react': '^5.0.4',
+      husky: '^9.1.7',
+      'lint-staged': '^16.1.0',
       typescript: '^5.7.2',
       vite: '^7.1.7',
     },
   };
 }
 
-export function addTestingScripts(
-  pkg: PackageJson,
-  hasE2E: boolean
-): PackageJson {
-  const scripts: Record<string, string> = {
-    test: 'bun test',
-  };
-
-  if (hasE2E) {
-    scripts['test:e2e'] = 'playwright test';
-    scripts['test:e2e:ui'] = 'playwright test --ui';
-  }
-
-  return mergePackageJson(pkg, { scripts });
+export function addTestingScripts(pkg: PackageJson): PackageJson {
+  return mergePackageJson(pkg, {
+    scripts: { test: 'bun test' },
+  });
 }

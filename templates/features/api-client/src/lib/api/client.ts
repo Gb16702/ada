@@ -19,7 +19,7 @@ function getOrigin(): string {
   }
   throw new Error(
     '[API Client] Cannot resolve origin in SSR. ' +
-    'Either provide an absolute baseUrl to createClient() or set VITE_API_URL.'
+      'Either provide an absolute baseUrl to createClient() or set VITE_API_URL.'
   );
 }
 
@@ -36,7 +36,9 @@ function createClient(config: ClientConfig = {}) {
     finalConfig: ApiRequestConfig
   ): Promise<ApiResponse<T>> {
     const endpoint = finalConfig.endpoint ?? '';
-    const resolvedBase = baseUrl.startsWith('http') ? baseUrl : `${getOrigin()}${baseUrl}`;
+    const resolvedBase = baseUrl.startsWith('http')
+      ? baseUrl
+      : `${getOrigin()}${baseUrl}`;
     const url = new URL(endpoint, resolvedBase);
 
     if (finalConfig.params) {
@@ -129,20 +131,33 @@ function createClient(config: ClientConfig = {}) {
       return this;
     },
 
-    get: <T>(endpoint: string, config?: Omit<ApiRequestConfig, 'method' | 'body'>) =>
-      request<T>(endpoint, { ...config, method: 'GET' }),
+    get: <T>(
+      endpoint: string,
+      config?: Omit<ApiRequestConfig, 'method' | 'body'>
+    ) => request<T>(endpoint, { ...config, method: 'GET' }),
 
-    post: <T>(endpoint: string, body?: unknown, config?: Omit<ApiRequestConfig, 'method' | 'body'>) =>
-      request<T>(endpoint, { ...config, method: 'POST', body }),
+    post: <T>(
+      endpoint: string,
+      body?: unknown,
+      config?: Omit<ApiRequestConfig, 'method' | 'body'>
+    ) => request<T>(endpoint, { ...config, method: 'POST', body }),
 
-    put: <T>(endpoint: string, body?: unknown, config?: Omit<ApiRequestConfig, 'method' | 'body'>) =>
-      request<T>(endpoint, { ...config, method: 'PUT', body }),
+    put: <T>(
+      endpoint: string,
+      body?: unknown,
+      config?: Omit<ApiRequestConfig, 'method' | 'body'>
+    ) => request<T>(endpoint, { ...config, method: 'PUT', body }),
 
-    patch: <T>(endpoint: string, body?: unknown, config?: Omit<ApiRequestConfig, 'method' | 'body'>) =>
-      request<T>(endpoint, { ...config, method: 'PATCH', body }),
+    patch: <T>(
+      endpoint: string,
+      body?: unknown,
+      config?: Omit<ApiRequestConfig, 'method' | 'body'>
+    ) => request<T>(endpoint, { ...config, method: 'PATCH', body }),
 
-    delete: <T>(endpoint: string, config?: Omit<ApiRequestConfig, 'method' | 'body'>) =>
-      request<T>(endpoint, { ...config, method: 'DELETE' }),
+    delete: <T>(
+      endpoint: string,
+      config?: Omit<ApiRequestConfig, 'method' | 'body'>
+    ) => request<T>(endpoint, { ...config, method: 'DELETE' }),
 
     request,
   };
